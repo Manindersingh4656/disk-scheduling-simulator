@@ -1,0 +1,26 @@
+/* 
+This file is used for custom styles 
+Bootstrap handles most layout & responsiveness
+*/
+
+/* Center content nicely */
+body {
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Card spacing improvement */
+.card {
+    border-radius: 10px;
+}
+
+/* Heading spacing */
+h4 {
+    margin-bottom: 15px;
+}
+
+/* Result text styling */
+#totalSeekTime,
+#averageSeekTime,
+#throughput {
+    font-weight: bold;
+}
