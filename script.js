@@ -1,24 +1,53 @@
 const BACKEND_URL = "http://127.0.0.1:5000";
-let moveChart, compareChart, lastSequence = [];
 
-// ================= DARK MODE =================
-function toggleDarkMode() {
-    document.body.classList.toggle("dark");
+let moveChart = null;
+let compareChart = null;
+let lastSequence = [];
+
+
+
+const algorithmInfo = {
+    "FCFS": "First Come First Serve schedules disk requests in the order they arrive. It is simple but can result in long seek times.",
+    "SSTF": "Shortest Seek Time First selects the request closest to the current head position, minimizing average seek time.",
+    "SCAN": "SCAN moves the disk head in one direction servicing requests, then reverses direction like an elevator.",
+    "CSCAN": "C-SCAN services requests in one direction only and jumps back to the beginning, providing uniform wait time."
+};
+
+function updateAlgorithmDescription() {
+    const algo = document.getElementById("algorithm").value;
+    document.getElementById("algoDescription").innerText = algorithmInfo[algo];
 }
 
-// ================= VALIDATION =================
-function validateInputs() {
-    const d = parseInt(diskSize.value);
-    const h = parseInt(headPosition.value);
-    const r = requestQueue.value.split(",").map(x => parseInt(x.trim()));
+updateAlgorithmDescription();
 
-    if (isNaN(d) || d <= 0) return alert("Invalid disk size"), false;
-    if (isNaN(h) || h < 0 || h >= d) return alert("Invalid head position"), false;
-    if (r.some(x => isNaN(x) || x < 0 || x >= d)) return alert("Invalid requests"), false;
+
+
+function validateInputs() {
+    const diskSize = parseInt(document.getElementById("diskSize").value);
+    const head = parseInt(document.getElementById("headPosition").value);
+    const requests = document.getElementById("requestQueue")
+        .value.split(",").map(r => parseInt(r.trim()));
+
+    if (isNaN(diskSize) || diskSize <= 0) {
+        alert("Invalid disk size");
+        return false;
+    }
+
+    if (isNaN(head) || head < 0 || head >= diskSize) {
+        alert("Invalid head position");
+        return false;
+    }
+
+    if (requests.some(r => isNaN(r) || r < 0 || r >= diskSize)) {
+        alert("Invalid request values");
+        return false;
+    }
+
     return true;
 }
 
-// ================= SIMULATE =================
+
+
 function runSimulation() {
     if (!validateInputs()) return;
 
@@ -33,18 +62,21 @@ function runSimulation() {
             direction: scanDirection.value
         })
     })
-    .then(r => r.json())
-    .then(d => {
-        totalSeekTime.innerText = d.total_seek_time;
-        averageSeekTime.innerText = d.average_seek_time;
-        throughput.innerText = d.throughput;
-        animate(d.seek_sequence);
-        fillTable(d.seek_sequence);
-        lastSequence = d.seek_sequence;
+    .then(res => res.json())
+    .then(data => {
+        totalSeekTime.innerText = data.total_seek_time;
+        averageSeekTime.innerText = data.average_seek_time;
+        throughput.innerText = data.throughput;
+
+        animateHead(data.seek_sequence);
+        fillStepTable(data.seek_sequence);
+
+        lastSequence = data.seek_sequence;
     });
 }
 
-// ================= COMPARE =================
+
+
 function compareAll() {
     if (!validateInputs()) return;
 
@@ -58,21 +90,31 @@ function compareAll() {
             direction: scanDirection.value
         })
     })
-    .then(r => r.json())
-    .then(d => {
-        drawComparison(d.comparison);
-        bestAlgo.innerText = d.best_algorithm;
+    .then(res => res.json())
+    .then(data => {
+        drawComparisonChart(data.comparison);
+        bestAlgo.innerText = data.best_algorithm;
     });
 }
 
-// ================= ANIMATION =================
-function animate(seq) {
-    let i = 0, labels = [], data = [];
+
+
+function animateHead(sequence) {
+    let i = 0;
+    const labels = [];
+    const values = [];
+
     if (moveChart) moveChart.destroy();
 
-    moveChart = new Chart(movementChart, {
+    moveChart = new Chart(document.getElementById("movementChart"), {
         type: "line",
-        data: { labels, datasets: [{ label: "Head Position", data }] },
+        data: {
+            labels,
+            datasets: [{
+                label: "Disk Head Position",
+                data: values
+            }]
+        },
         options: {
             scales: {
                 x: { title: { display: true, text: "Step" }},
@@ -82,41 +124,87 @@ function animate(seq) {
     });
 
     const interval = setInterval(() => {
-        if (i >= seq.length) return clearInterval(interval);
+        if (i >= sequence.length) {
+            clearInterval(interval);
+            return;
+        }
         labels.push(i);
-        data.push(seq[i++]);
+        values.push(sequence[i]);
         moveChart.update();
+        i++;
     }, 400);
 }
 
-// ================= COMPARISON CHART =================
-function drawComparison(cmp) {
-    const labels = Object.keys(cmp);
-    const values = labels.map(k => cmp[k].total_seek_time);
+
+
+function drawComparisonChart(results) {
+    const labels = Object.keys(results);
+    const values = labels.map(k => results[k].total_seek_time);
 
     if (compareChart) compareChart.destroy();
 
-    compareChart = new Chart(comparisonChart, {
+    compareChart = new Chart(document.getElementById("comparisonChart"), {
         type: "bar",
-        data: { labels, datasets: [{ label: "Total Seek Time", data: values }] }
+        data: {
+            labels,
+            datasets: [{
+                label: "Total Seek Time",
+                data: values
+            }]
+        }
     });
 }
 
-// ================= TABLE =================
-function fillTable(seq) {
-    stepTable.innerHTML = "";
-    seq.forEach((v, i) => {
-        stepTable.innerHTML += `<tr><td>${i}</td><td>${v}</td></tr>`;
+
+
+function fillStepTable(sequence) {
+    const table = document.getElementById("stepTable");
+    table.innerHTML = "";
+
+    sequence.forEach((pos, i) => {
+        table.innerHTML += `<tr><td>${i}</td><td>${pos}</td></tr>`;
     });
 }
 
-// ================= CSV =================
+
+
 function downloadReport() {
-    let csv = "Step,Head\n";
+    let csv = "Step,Head Position\n";
     lastSequence.forEach((v, i) => csv += `${i},${v}\n`);
-    const blob = new Blob([csv], {type:"text/csv"});
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "disk_scheduling_report.csv";
-    a.click();
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "disk_scheduling_report.csv";
+    link.click();
+}
+
+
+
+function exportToPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    doc.setFontSize(16);
+    doc.text("Advanced Disk Scheduling Simulator Report", 10, 15);
+
+    doc.setFontSize(12);
+    doc.text(`Algorithm: ${algorithm.value}`, 10, 30);
+    doc.text(`Total Seek Time: ${totalSeekTime.innerText}`, 10, 40);
+    doc.text(`Average Seek Time: ${averageSeekTime.innerText}`, 10, 50);
+    doc.text(`Throughput: ${throughput.innerText}`, 10, 60);
+
+    doc.text("Disk Head Movement:", 10, 75);
+
+    let y = 85;
+    lastSequence.forEach((pos, i) => {
+        doc.text(`Step ${i}: ${pos}`, 10, y);
+        y += 7;
+        if (y > 280) {
+            doc.addPage();
+            y = 20;
+        }
+    });
+
+    doc.save("disk_scheduling_report.pdf");
 }

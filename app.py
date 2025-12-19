@@ -1,6 +1,5 @@
-"""
-Advanced Disk Scheduling Simulator - Backend
-"""
+
+#Advanced Disk Scheduling Simulator - Backend
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -8,9 +7,8 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# ===============================
-# Disk Scheduling Algorithms
-# ===============================
+# Disk Scheduling Algorithm
+
 
 def fcfs(requests, head):
     seq = [head]
@@ -105,9 +103,9 @@ def cscan(requests, head, disk_size):
     return seq, seek
 
 
-# ===============================
+
 # API: SIMULATE
-# ===============================
+
 
 @app.route("/simulate", methods=["POST"])
 def simulate():
@@ -144,9 +142,9 @@ def simulate():
     })
 
 
-# ===============================
+
 # API: COMPARE ALL
-# ===============================
+
 
 @app.route("/compare", methods=["POST"])
 def compare():
