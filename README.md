@@ -42,8 +42,6 @@ cd backend
 pip install -r requirements.txt
 python app.py
 
-markdown
-Copy code
 
 ### Frontend
 - Open `frontend/index.html` in a web browser  
@@ -51,8 +49,6 @@ OR
 cd frontend
 python -m http.server 8000
 
-pgsql
-Copy code
 
 ## Purpose
 This project is developed for educational purposes to help understand disk scheduling algorithms and analyze their performance through visualization.
