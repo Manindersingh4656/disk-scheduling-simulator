@@ -1,88 +1,86 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>Disk Scheduling Simulator</title>
 
-    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<!-- NAVBAR -->
 <nav class="navbar px-4">
     <span class="navbar-brand fw-bold">
         <i class="bi bi-hdd"></i> Disk Scheduling Simulator
     </span>
-
-    <!-- Dark Mode Toggle -->
     <button class="btn btn-outline-light" onclick="toggleDarkMode()">
         <i class="bi bi-moon"></i>
     </button>
 </nav>
 
 <div class="container-fluid mt-4">
-    <div class="row">
+<div class="row">
 
-        <!-- INPUT PANEL -->
-        <div class="col-md-4">
-            <div class="card p-4">
-                <h5 class="text-primary">Input Parameters</h5>
+<div class="col-md-4">
+<div class="card p-4">
+    <h5>Inputs</h5>
 
-                <input class="form-control mb-3" id="diskSize" placeholder="Disk Size">
-                <input class="form-control mb-3" id="requestQueue" placeholder="98,183,37,122">
-                <input class="form-control mb-3" id="headPosition" placeholder="Head Position">
+    <input id="diskSize" class="form-control mb-2" placeholder="Disk Size">
+    <input id="requestQueue" class="form-control mb-2" placeholder="98,183,37">
+    <input id="headPosition" class="form-control mb-2" placeholder="Head Position">
 
-                <select class="form-select mb-3" id="algorithm">
-                    <option>FCFS</option>
-                    <option>SSTF</option>
-                    <option>SCAN</option>
-                    <option>CSCAN</option>
-                </select>
+    <select id="algorithm" class="form-select mb-2">
+        <option>FCFS</option>
+        <option>SSTF</option>
+        <option>SCAN</option>
+        <option>CSCAN</option>
+    </select>
 
-                <button class="btn btn-primary w-100 mb-2" onclick="runSimulation()">Run</button>
-                <button class="btn btn-success w-100" onclick="compareAll()">Compare All</button>
-            </div>
-        </div>
+    <select id="scanDirection" class="form-select mb-2">
+        <option value="RIGHT">SCAN Right</option>
+        <option value="LEFT">SCAN Left</option>
+    </select>
 
-        <!-- OUTPUT PANEL -->
-        <div class="col-md-8">
+    <button class="btn btn-primary w-100 mb-2" onclick="runSimulation()">Run</button>
+    <button class="btn btn-success w-100" onclick="compareAll()">Compare All</button>
+</div>
+</div>
 
-            <!-- METRICS -->
-            <div class="row mb-3">
-                <div class="col-md-4"><div class="metric-card">Total Seek <h3 id="totalSeekTime">-</h3></div></div>
-                <div class="col-md-4"><div class="metric-card">Avg Seek <h3 id="averageSeekTime">-</h3></div></div>
-                <div class="col-md-4"><div class="metric-card">Throughput <h3 id="throughput">-</h3></div></div>
-            </div>
+<div class="col-md-8">
 
-            <!-- ANIMATED CHART -->
-            <div class="card p-4 mb-3">
-                <h6>Animated Disk Head Movement</h6>
-                <canvas id="movementChart"></canvas>
-            </div>
+<div class="row mb-3">
+    <div class="col"><div class="metric">Total Seek <h4 id="totalSeekTime">-</h4></div></div>
+    <div class="col"><div class="metric">Avg Seek <h4 id="averageSeekTime">-</h4></div></div>
+    <div class="col"><div class="metric">Throughput <h4 id="throughput">-</h4></div></div>
+</div>
 
-            <!-- COMPARISON BAR CHART -->
-            <div class="card p-4">
-                <h6>Algorithm Comparison</h6>
-                <canvas id="comparisonChart"></canvas>
-                <div class="mt-2">
-                    Best Algorithm:
-                    <span class="badge bg-success" id="bestAlgo">-</span>
-                </div>
-            </div>
+<div class="card p-3 mb-3">
+    <h6>Animated Disk Head Movement</h6>
+    <canvas id="movementChart"></canvas>
+</div>
 
-        </div>
-    </div>
+<div class="card p-3 mb-3">
+    <h6>Algorithm Comparison</h6>
+    <canvas id="comparisonChart"></canvas>
+    Best Algorithm: <span class="badge bg-success" id="bestAlgo">-</span>
+</div>
+
+<div class="card p-3">
+    <h6>Step-by-Step Execution</h6>
+    <table class="table table-bordered">
+        <thead><tr><th>Step</th><th>Head</th></tr></thead>
+        <tbody id="stepTable"></tbody>
+    </table>
+    <button class="btn btn-outline-secondary" onclick="downloadReport()">Download CSV</button>
+</div>
+
+</div>
+</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="script.js"></script>
-
 </body>
 </html>
+

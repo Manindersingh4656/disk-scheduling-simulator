@@ -11,24 +11,21 @@ body.dark {
 }
 
 body {
-    background-color: var(--bg);
+    background: var(--bg);
     color: var(--text);
-    font-family: Segoe UI, sans-serif;
 }
 
 .navbar {
-    background-color: #343a40;
+    background: #343a40;
     color: white;
 }
 
-.card {
-    background-color: var(--card);
-    border-radius: 12px;
+.card, .metric {
+    background: var(--card);
+    border-radius: 10px;
+    padding: 15px;
 }
 
-.metric-card {
-    background-color: var(--card);
-    padding: 15px;
-    border-radius: 12px;
+.metric {
     text-align: center;
 }
