@@ -35,44 +35,32 @@ def sstf(requests, head):
     return seq, seek
 
 
-def scan(requests, head, disk_size, direction):
+def scan(requests, head, disk_size):
     left = sorted([r for r in requests if r < head])
     right = sorted([r for r in requests if r >= head])
 
-    seq = [head]
-    seek = 0
+    seek_sequence = [head]
+    total_seek_time = 0
 
-    if direction == "LEFT":
-        for r in reversed(left):
-            seek += abs(head - r)
-            head = r
-            seq.append(head)
+    # Move towards higher tracks first
+    for r in right:
+        total_seek_time += abs(head - r)
+        head = r
+        seek_sequence.append(head)
 
-        seek += abs(head - 0)
-        head = 0
-        seq.append(head)
+    # Go to end of disk
+    total_seek_time += abs(head - (disk_size - 1))
+    head = disk_size - 1
+    seek_sequence.append(head)
 
-        for r in right:
-            seek += abs(head - r)
-            head = r
-            seq.append(head)
+    # Reverse direction
+    for r in reversed(left):
+        total_seek_time += abs(head - r)
+        head = r
+        seek_sequence.append(head)
 
-    else:  # RIGHT
-        for r in right:
-            seek += abs(head - r)
-            head = r
-            seq.append(head)
+    return seek_sequence, total_seek_time
 
-        seek += abs(head - (disk_size - 1))
-        head = disk_size - 1
-        seq.append(head)
-
-        for r in reversed(left):
-            seek += abs(head - r)
-            head = r
-            seq.append(head)
-
-    return seq, seek
 
 
 def cscan(requests, head, disk_size):
@@ -102,6 +90,52 @@ def cscan(requests, head, disk_size):
 
     return seq, seek
 
+def look(requests, head):
+    left = sorted([r for r in requests if r < head])
+    right = sorted([r for r in requests if r >= head])
+
+    seek_sequence = [head]
+    total_seek_time = 0
+
+    # Mo
+    for r in right:
+        total_seek_time += abs(head - r)
+        head = r
+        seek_sequence.append(head)
+
+    # Revrse direti
+    for r in reversed(left):
+        total_seek_time += abs(head - r)
+        head = r
+        seek_sequence.append(head)
+
+    return seek_sequence, total_seek_time
+
+def clook(requests, head):
+    left = sorted([r for r in requests if r < head])
+    right = sorted([r for r in requests if r >= head])
+
+    seek_sequence = [head]
+    total_seek_time = 0
+
+    # Moe right
+    for r in right:
+        total_seek_time += abs(head - r)
+        head = r
+        seek_sequence.append(head)
+
+    # Jump to first request on lt disk start)
+    if left:
+        total_seek_time += abs(head - left[0])
+        head = left[0]
+        seek_sequence.append(head)
+
+        for r in left:
+            total_seek_time += abs(head - r)
+            head = r
+            seek_sequence.append(head)
+
+    return seek_sequence, total_seek_time
 
 
 # API: SIMULATE
@@ -115,7 +149,6 @@ def simulate():
     requests = list(map(int, data["requests"]))
     head = int(data["head_position"])
     algo = data["algorithm"]
-    direction = data.get("direction", "RIGHT")
 
     if head < 0 or head >= disk_size:
         return jsonify({"error": "Invalid head position"}), 400
@@ -128,9 +161,13 @@ def simulate():
     elif algo == "SSTF":
         seq, seek = sstf(requests, head)
     elif algo == "SCAN":
-        seq, seek = scan(requests, head, disk_size, direction)
+        seq, seek = scan(requests, head, disk_size)
     elif algo == "CSCAN":
         seq, seek = cscan(requests, head, disk_size)
+    elif algo == "LOOK":
+        seq, seek = look(requests, head)
+    elif algo == "CLOOK":
+        seq, seek = clook(requests, head)
     else:
         return jsonify({"error": "Invalid algorithm"}), 400
 
@@ -153,15 +190,18 @@ def compare():
     disk_size = int(data["disk_size"])
     requests = list(map(int, data["requests"]))
     head = int(data["head_position"])
-    direction = data.get("direction", "RIGHT")
+
 
     results = {}
 
     for name, func in [
         ("FCFS", lambda: fcfs(requests, head)),
         ("SSTF", lambda: sstf(requests, head)),
-        ("SCAN", lambda: scan(requests, head, disk_size, direction)),
-        ("CSCAN", lambda: cscan(requests, head, disk_size))
+        ("SCAN", lambda: scan(requests, head, disk_size)),
+        ("CSCAN", lambda: cscan(requests, head, disk_size)),
+        ("LOOK", lambda: look(requests, head)),
+        ("CLOOK", lambda: clook(requests, head))
+
     ]:
         seq, seek = func()
         results[name] = {"total_seek_time": seek}

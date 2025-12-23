@@ -10,7 +10,9 @@ const algorithmInfo = {
     "FCFS": "First Come First Serve schedules disk requests in the order they arrive. It is simple but can result in long seek times.",
     "SSTF": "Shortest Seek Time First selects the request closest to the current head position, minimizing average seek time.",
     "SCAN": "SCAN moves the disk head in one direction servicing requests, then reverses direction like an elevator.",
-    "CSCAN": "C-SCAN services requests in one direction only and jumps back to the beginning, providing uniform wait time."
+    "CSCAN": "C-SCAN services requests in one direction only and jumps back to the beginning, providing uniform wait time.",
+    "LOOK": "LOOK is like SCAN but reverses at last request.",
+    "CLOOK": "C-LOOK is like C-SCAN but jumps between requests only."
 };
 
 function updateAlgorithmDescription() {
@@ -58,8 +60,7 @@ function runSimulation() {
             disk_size: diskSize.value,
             requests: requestQueue.value.split(",").map(Number),
             head_position: headPosition.value,
-            algorithm: algorithm.value,
-            direction: scanDirection.value
+            algorithm: algorithm.value
         })
     })
     .then(res => res.json())
@@ -68,7 +69,8 @@ function runSimulation() {
         averageSeekTime.innerText = data.average_seek_time;
         throughput.innerText = data.throughput;
 
-        animateHead(data.seek_sequence);
+        drawDiskPathGraph(data.seek_sequence);
+
         fillStepTable(data.seek_sequence);
 
         lastSequence = data.seek_sequence;
@@ -86,8 +88,7 @@ function compareAll() {
         body: JSON.stringify({
             disk_size: diskSize.value,
             requests: requestQueue.value.split(",").map(Number),
-            head_position: headPosition.value,
-            direction: scanDirection.value
+            head_position: headPosition.value
         })
     })
     .then(res => res.json())
@@ -99,40 +100,59 @@ function compareAll() {
 
 
 
-function animateHead(sequence) {
-    let i = 0;
-    const labels = [];
-    const values = [];
+function drawDiskPathGraph(sequence) {
+
+    // X-axis: cylinder number
+    // Y-axis: service order (time)
+    const points = sequence.map((cylinder, index) => ({
+        x: cylinder,
+        y: index
+    }));
 
     if (moveChart) moveChart.destroy();
 
     moveChart = new Chart(document.getElementById("movementChart"), {
         type: "line",
         data: {
-            labels,
             datasets: [{
-                label: "Disk Head Position",
-                data: values
+                label: "Disk Head Path",
+                data: points,
+                borderColor: "#0d6efd",
+                backgroundColor: "#0d6efd",
+                showLine: true,
+                tension: 0,
+                pointRadius: 4
             }]
         },
         options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            return `Cylinder: ${ctx.raw.x}, Step: ${ctx.raw.y}`;
+                        }
+                    }
+                }
+            },
             scales: {
-                x: { title: { display: true, text: "Step" }},
-                y: { title: { display: true, text: "Disk Track" }}
+                x: {
+                    type: "linear",
+                    title: {
+                        display: true,
+                        text: "Cylinder Number"
+                    }
+                },
+                y: {
+                    reverse: true,
+                    title: {
+                        display: true,
+                        text: "Service Order"
+                    }
+                }
             }
         }
     });
-
-    const interval = setInterval(() => {
-        if (i >= sequence.length) {
-            clearInterval(interval);
-            return;
-        }
-        labels.push(i);
-        values.push(sequence[i]);
-        moveChart.update();
-        i++;
-    }, 400);
 }
 
 
