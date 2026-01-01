@@ -3,6 +3,7 @@
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import random
 
 app = Flask(__name__)
 CORS(app)
@@ -137,6 +138,84 @@ def clook(requests, head):
 
     return seek_sequence, total_seek_time
 
+def rss(requests, head):
+    shuffled = requests.copy()
+    random.shuffle(shuffled)
+
+    seq = [head]
+    seek = 0
+
+    for r in shuffled:
+        seek += abs(head - r)
+        head = r
+        seq.append(head)
+
+    return seq, seek
+
+def lifo(requests, head):
+    stack = requests.copy()
+    seq = [head]
+    seek = 0
+
+    while stack:
+        r = stack.pop()
+        seek += abs(head - r)
+        head = r
+        seq.append(head)
+
+    return seq, seek
+
+
+def n_step_scan(requests, head, disk_size, N=4):
+    seq = [head]
+    seek = 0
+
+    i = 0
+    while i < len(requests):
+        batch = requests[i:i+N]
+        i += N
+
+        left = sorted([r for r in batch if r < head])
+        right = sorted([r for r in batch if r >= head])
+
+        for r in right:
+            seek += abs(head - r)
+            head = r
+            seq.append(head)
+
+        for r in reversed(left):
+            seek += abs(head - r)
+            head = r
+            seq.append(head)
+
+    return seq, seek
+
+def f_scan(requests, head, disk_size):
+    queue1 = requests.copy()
+    queue2 = []
+
+    seq = [head]
+    seek = 0
+
+    # Process queue1 using SCAN logic
+    left = sorted([r for r in queue1 if r < head])
+    right = sorted([r for r in queue1 if r >= head])
+
+    for r in right:
+        seek += abs(head - r)
+        head = r
+        seq.append(head)
+
+    for r in reversed(left):
+        seek += abs(head - r)
+        head = r
+        seq.append(head)
+
+    return seq, seek
+
+
+
+
 
 # API: SIMULATE
 
@@ -168,6 +247,18 @@ def simulate():
         seq, seek = look(requests, head)
     elif algo == "CLOOK":
         seq, seek = clook(requests, head)
+    elif algo == "RSS":
+        seq, seek = rss(requests, head)
+
+    elif algo == "LIFO":
+        seq, seek = lifo(requests, head)
+
+    elif algo == "NSTEP":
+        seq, seek = n_step_scan(requests, head, disk_size)
+
+    elif algo == "FSCAN":
+        seq, seek = f_scan(requests, head, disk_size)
+
     else:
         return jsonify({"error": "Invalid algorithm"}), 400
 
@@ -200,7 +291,12 @@ def compare():
         ("SCAN", lambda: scan(requests, head, disk_size)),
         ("CSCAN", lambda: cscan(requests, head, disk_size)),
         ("LOOK", lambda: look(requests, head)),
-        ("CLOOK", lambda: clook(requests, head))
+        ("CLOOK", lambda: clook(requests, head)),
+        ("RSS", lambda: rss(requests, head)),
+        ("LIFO", lambda: lifo(requests, head)),
+        ("NSTEP", lambda: n_step_scan(requests, head, disk_size)),
+        ("FSCAN", lambda: f_scan(requests, head, disk_size))
+
 
     ]:
         seq, seek = func()

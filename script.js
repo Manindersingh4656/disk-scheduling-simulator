@@ -12,7 +12,12 @@ const algorithmInfo = {
     "SCAN": "SCAN moves the disk head in one direction servicing requests, then reverses direction like an elevator.",
     "CSCAN": "C-SCAN services requests in one direction only and jumps back to the beginning, providing uniform wait time.",
     "LOOK": "LOOK is like SCAN but reverses at last request.",
-    "CLOOK": "C-LOOK is like C-SCAN but jumps between requests only."
+    "CLOOK": "C-LOOK is like C-SCAN but jumps between requests only.",
+    "RSS": "RSS services disk requests in random order. It is used mainly for testing.",
+    "LIFO": "LIFO services the most recent request first. It may cause starvation.",
+    "NSTEP": "N-STEP SCAN divides requests into fixed-size batches and processes each batch using SCAN.",
+    "FSCAN": "F-SCAN uses two queues to avoid interference between old and new requests."
+
 };
 
 function updateAlgorithmDescription() {
@@ -65,9 +70,10 @@ function runSimulation() {
     })
     .then(res => res.json())
     .then(data => {
-        totalSeekTime.innerText = data.total_seek_time;
-        averageSeekTime.innerText = data.average_seek_time;
-        throughput.innerText = data.throughput;
+        totalSeekTime.innerText = data.total_seek_time + " tracks";
+        averageSeekTime.innerText = data.average_seek_time + " tracks/request";
+        throughput.innerText = data.throughput + " requests/track";
+
 
         drawDiskPathGraph(data.seek_sequence);
 
@@ -140,7 +146,7 @@ function drawDiskPathGraph(sequence) {
                     type: "linear",
                     title: {
                         display: true,
-                        text: "Cylinder Number"
+                        text: "Track number"
                     }
                 },
                 y: {
@@ -157,23 +163,59 @@ function drawDiskPathGraph(sequence) {
 
 
 
-function drawComparisonChart(results) {
-    const labels = Object.keys(results);
-    const values = labels.map(k => results[k].total_seek_time);
+function drawComparisonChart(comparisonData) {
 
-    if (compareChart) compareChart.destroy();
+    // Extract algorithm names
+    const labels = Object.keys(comparisonData);
 
-    compareChart = new Chart(document.getElementById("comparisonChart"), {
+    // Extract total seek times
+    const values = labels.map(algo =>
+        comparisonData[algo].total_seek_time
+    );
+
+    // Destroy old chart before creating new one
+    if (compareChart !== null) {
+        compareChart.destroy();
+    }
+
+    const ctx = document.getElementById("comparisonChart").getContext("2d");
+
+    compareChart = new Chart(ctx, {
         type: "bar",
         data: {
-            labels,
+            labels: labels,
             datasets: [{
-                label: "Total Seek Time",
-                data: values
+                label: "Total Disk Arm Movement (tracks)",
+                data: values,
+                backgroundColor: "#0d6efd"
             }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    enabled: true
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: "Disk Scheduling Algorithm"
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: "Total Disk Arm Movement"
+                    }
+                }
+            }
         }
     });
 }
+
 
 
 
@@ -210,7 +252,7 @@ function exportToPDF() {
 
     doc.setFontSize(12);
     doc.text(`Algorithm: ${algorithm.value}`, 10, 30);
-    doc.text(`Total Seek Time: ${totalSeekTime.innerText}`, 10, 40);
+    doc.text(`Total Disk Arm Movement: ${totalSeekTime.innerText}`, 10, 40);
     doc.text(`Average Seek Time: ${averageSeekTime.innerText}`, 10, 50);
     doc.text(`Throughput: ${throughput.innerText}`, 10, 60);
 
